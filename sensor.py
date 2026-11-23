@@ -20,7 +20,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
         CONF_USERNAME,
         CONF_PASSWORD,
-        ENERGY_KILO_WATT_HOUR,
+        UnitOfEnergy,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -34,7 +34,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = timedelta(minutes=30)
+SCAN_INTERVAL = timedelta(minutes=5)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -71,7 +71,7 @@ class ChiliconDailySensor(SensorEntity):
     """Representation of a sensor."""
 
     _attr_name = "Chilicon Solar Energy Daily Generated"
-    _attr_native_unit_of_measurement = ENERGY_KILO_WATT_HOUR
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
@@ -154,6 +154,11 @@ class ChiliconCloud():
                 return -1
             
             [day_data, lifetime, current] = await resp.json()
+            _LOGGER.info(
+                "Chilicon API response: lifetime=%r, current=%r",
+                lifetime,
+                current,
+            )
             kwh = self.calculate_today(day_data)
             return kwh
 
