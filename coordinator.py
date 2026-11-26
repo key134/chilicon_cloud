@@ -121,20 +121,18 @@ class ChiliconCloud:
         if not isinstance(day_data, list):
             raise CloudError("Invalid day_data in Chilicon response")
 
-        # Each sample is average watts over 1/12 hour. -1 marks an unused slot.
+        # Each sample is average watts over 1/12 hour. The -1 sentinel and
+        # negative readings contribute no generated energy.
         daily_energy = 0.0
         for index, sample in enumerate(day_data):
-            if type(sample) in (int, float) and sample == -1:
+            if type(sample) in (int, float) and -float_info.max <= sample < 0:
                 continue
             try:
                 daily_energy += _nonnegative(sample, "day_data sample") / 12000
             except CloudError:
-                detail = type(sample).__name__
-                if type(sample) in (int, float) and -float_info.max <= sample < 0:
-                    detail = f"negative {detail}: {sample:.8g}"
                 raise CloudError(
                     f"Invalid day_data sample at index {index} in Chilicon response "
-                    f"({detail})"
+                    f"({type(sample).__name__})"
                 ) from None
 
         power = _nonnegative(current, "current") * 1000

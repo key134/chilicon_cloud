@@ -50,7 +50,7 @@ def response(status=200, *, payload=None, location=None, content_type="applicati
 def production(samples=None, current=4.748639601744799):
     """Return a successful response with a deliberately constant lifetime value."""
     if samples is None:
-        samples = [6000, -1, 6222.977149412498, 0]
+        samples = [6000, -1, 6222.977149412498, 0, -0.47205075]
     return response(payload=[samples, LIFETIME_KWH, current])
 
 
