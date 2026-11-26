@@ -75,13 +75,21 @@ class ChiliconCloud:
         ) as response:
             if response.status >= 500 or response.status == 429:
                 raise CloudError(f"Chilicon login returned HTTP {response.status}")
-            if (
-                response.status not in (301, 302, 303, 307, 308)
-                or response.headers.get("Location")
-                != f"/installation/{self.installation_hash}"
-            ):
+            if response.status not in (301, 302, 303, 307, 308):
                 raise CloudError(
-                    "Chilicon login did not authorize the configured installation"
+                    f"Chilicon login returned HTTP {response.status} instead of a redirect"
+                )
+            location = response.headers.get("Location")
+            if location != f"/installation/{self.installation_hash}":
+                if not location:
+                    destination = "missing Location header"
+                elif location == "/login":
+                    destination = "redirected back to login"
+                else:
+                    destination = "unexpected redirect destination"
+                raise CloudError(
+                    f"Chilicon login did not redirect to the configured installation "
+                    f"(HTTP {response.status}, {destination})"
                 )
         self._authenticated = True
 
@@ -190,6 +198,7 @@ class ChiliconCoordinator(DataUpdateCoordinator[Production]):
         try:
             return await self._cloud.fetch_data()
         except CloudError as err:
+            _LOGGER.debug("Chilicon poll failed: %s", err)
             raise UpdateFailed(str(err)) from err
         finally:
             self._poll_finished.set()
