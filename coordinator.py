@@ -115,10 +115,19 @@ class ChiliconCloud:
 
         # Each sample is average watts over 1/12 hour. -1 marks an unused slot.
         daily_energy = 0.0
-        for sample in day_data:
+        for index, sample in enumerate(day_data):
             if type(sample) in (int, float) and sample == -1:
                 continue
-            daily_energy += _nonnegative(sample, "day_data sample") / 12000
+            try:
+                daily_energy += _nonnegative(sample, "day_data sample") / 12000
+            except CloudError:
+                detail = type(sample).__name__
+                if type(sample) in (int, float) and -float_info.max <= sample < 0:
+                    detail = f"negative {detail}: {sample:.8g}"
+                raise CloudError(
+                    f"Invalid day_data sample at index {index} in Chilicon response "
+                    f"({detail})"
+                ) from None
 
         power = _nonnegative(current, "current") * 1000
         polled_at = dt.now()
